@@ -6,8 +6,8 @@
 #          Andreas Geiger, Sanja Fidler
 # 
 
-"""Script used for pickling the 3D Future dataset in order to be subsequently
-used by our scripts.
+"""
+Script used for pickling the 3D Future dataset in order to be subsequently used by our scripts.
 """
 import argparse
 import os
@@ -125,3 +125,4 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+# python pickle_threed_future_dataset.py ../../Dataset/out-pickle ../../Dataset/3D-FRONT-TEST ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json --dataset_filtering threed_front_bedroom

@@ -71,22 +71,22 @@ def save_checkpoints(epoch, model, optimizer, experiment_directory):
 def main(argv):
     parser = argparse.ArgumentParser(
         description="Train a generative model on bounding boxes"
-    )
+    ) # 在边界框上训练生成模型
 
     parser.add_argument(
         "config_file",
         help="Path to the file that contains the experiment configuration"
-    )
+    ) # 包含实验配置的文件的路径
     parser.add_argument(
         "output_directory",
         help="Path to the output directory"
-    )
+    ) # 输出目录的路径
     parser.add_argument(
         "--weight_file",
         default=None,
         help=("The path to a previously trained model to continue"
               " the training from")
-    )
+    ) # 通往之前训练过的模型以继续训练的路径
     parser.add_argument(
         "--continue_from_epoch",
         default=0,
@@ -98,7 +98,7 @@ def main(argv):
         type=int,
         default=0,
         help="The number of processed spawned by the batch provider"
-    )
+    ) # 批处理提供程序生成的已处理数量
     parser.add_argument(
         "--seed",
         type=int,
@@ -109,17 +109,18 @@ def main(argv):
         "--experiment_tag",
         default=None,
         help="Tag that refers to the current experiment"
-    )
+    ) # 指当前实验的标签
     parser.add_argument(
         "--with_wandb_logger",
         action="store_true",
         help="Use wandB for logging the training progress"
-    )
+    ) # 使用wandB记录训练进度
 
     args = parser.parse_args(argv)
 
     # Disable trimesh's logger
     logging.getLogger("trimesh").setLevel(logging.ERROR)
+    # logging.ERROR: 40
 
     # Set the random seed
     np.random.seed(args.seed)
@@ -127,31 +128,34 @@ def main(argv):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(np.random.randint(np.iinfo(np.int32).max))
 
-    if torch.cuda.is_available():
+    if torch.cuda.is_available(): # 可以使用cuda
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu")
-    print("Running code on", device)
+    # Running code on cuda:0
 
     # Check if output directory exists and if it doesn't create it
+    # ../../Dataset/out-train # 输出路径已存在
     if not os.path.exists(args.output_directory):
         os.makedirs(args.output_directory)
 
     # Create an experiment directory using the experiment_tag
-    if args.experiment_tag is None:
-        experiment_tag = id_generator(9)
+    if args.experiment_tag is None: # True
+        experiment_tag = id_generator(9) # experiment_tag: 82D4ZYFU8 # 这个标签的值是随机生成的
     else:
         experiment_tag = args.experiment_tag
 
     experiment_directory = os.path.join(
-        args.output_directory,
-        experiment_tag
-    )
+        args.output_directory, # ../../Dataset/out-train
+        experiment_tag         # DQ2ZXATH9
+    ) # experiment_directory: ../../Dataset/out-train/DQ2ZXATH9
     if not os.path.exists(experiment_directory):
         os.makedirs(experiment_directory)
 
-    # Save the parameters of this run to a file
-    save_experiment_params(args, experiment_tag, experiment_directory)
+    # Save the parameters of this run to a file # 将此运行的参数保存到文件中
+    print("tag1")
+    print("不输出 save_experiment_params") # lzc #save_experiment_params(args, experiment_tag, experiment_directory)
+    print("tag2")
     print("Save experiment statistics in {}".format(experiment_directory))
 
     # Parse the config file
@@ -284,4 +288,10 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    print("test --lzc")
     main(sys.argv[1:])
+
+
+# python train_network.py ../../Dataset/out-pickle/threed_future_model_bedroom.pkl ../../Dataset/out-train
+
+# python train_network.py ../config/bedrooms_config_lzc.yaml ../../Dataset/out-train

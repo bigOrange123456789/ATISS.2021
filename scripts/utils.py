@@ -24,6 +24,7 @@ from simple_3dviz.utils import render as render_simple_3dviz
 
 from scene_synthesis.utils import get_textured_objects
 
+import cv2
 
 class DirLock(object):
     def __init__(self, dirpath):
@@ -75,9 +76,9 @@ def floor_plan_renderable(room, color=(1.0, 1.0, 1.0, 1.0)):
 
 
 def floor_plan_from_scene(
-    scene,
-    path_to_floor_plan_textures,
-    without_room_mask=False
+    scene,                       # <scene_synthesis.datasets.threed_front_scene.Room>
+    path_to_floor_plan_textures, # '../../Dataset/3D-FRONT-texture'
+    without_room_mask=False      # without_room_mask=True
 ):
     if not without_room_mask:
         room_mask = torch.from_numpy(
@@ -85,32 +86,47 @@ def floor_plan_from_scene(
         )
     else:
         room_mask = None
-    # Also get a renderable for the floor plan
+    # room_mask = None
+    # Also get a renderable for the floor plan # 同时获取平面图的渲染图
+    # print("flag.0")
     floor, tr_floor = get_floor_plan(
-        scene,
-        [
+        scene, # scene Scene: MasterBedroom-9694 of type: masterbedroom contains 6 bboxes
+        [# length=1427, item0=../../Dataset/3D-FRONT-texture/2439602f-174d-444d-a6a5-f4a1181f88b6
             os.path.join(path_to_floor_plan_textures, fi)
             for fi in os.listdir(path_to_floor_plan_textures)
         ]
     )
+    # print("flag.1")
     return [floor], [tr_floor], room_mask
 
 
 def get_floor_plan(scene, floor_textures):
     """Return the floor plan of the scene as a trimesh mesh and a simple-3dviz
     TexturedMesh."""
+    # scene: Scene: Bedroom-9787 of type: bedroom contains 5 bboxes
     vertices, faces = scene.floor_plan
-    vertices = vertices - scene.floor_plan_centroid
-    uv = np.copy(vertices[:, [0, 2]])
-    uv -= uv.min(axis=0)
+    # vertices.shape (9, 3)
+    # faces.shape(3, 3)
+    vertices = vertices - scene.floor_plan_centroid # centroid: [-2.36505  0.  3.6434 ]
+    uv = np.copy(vertices[:, [0, 2]]) #沿y轴进行投影
+    # uv.shape (9, 2)
+    uv -= uv.min(axis=0) # uv.min(axis=0)=[-1.4652 -2.1933]
     uv /= 0.3  # repeat every 30cm
+    # floor_textures: 1427 ../../Dataset/3D-FRONT-texture/2439602f-174d-444d-a6a5-f4a1181f88b6
     texture = np.random.choice(floor_textures)
+    # texture: ../../Dataset/3D-FRONT-texture/55d18b9c-47c1-46ce-97a3-2b2d1527afad
 
+    #print("material:",Material.with_texture_image(texture))
+    # if True:
+    #     print("texture:",texture)
+    #     img = cv2.imread(texture+"/texture.png", 1)
+    #     print("img",type(img),img.shape)
+    # print("texture:",texture)
     floor = TexturedMesh.from_faces(
         vertices=vertices,
         uv=uv,
         faces=faces,
-        material=Material.with_texture_image(texture)
+        material=Material.with_texture_image(texture+"/texture.png") # Material.with_texture_image(texture)
     )
 
     tr_floor = trimesh.Trimesh(
@@ -119,7 +135,7 @@ def get_floor_plan(scene, floor_textures):
     tr_floor.visual = trimesh.visual.TextureVisuals(
         uv=np.copy(uv),
         material=trimesh.visual.material.SimpleMaterial(
-            image=Image.open(texture)
+            image=Image.open(texture+"/texture.png") # Image.open(texture)
         )
     )
 
@@ -128,36 +144,50 @@ def get_floor_plan(scene, floor_textures):
 
 def get_textured_objects_in_scene(scene, ignore_lamps=False):
     renderables = []
-    for furniture in scene.bboxes:
+    for furniture in scene.bboxes: # 遍历每一个家具
         model_path = furniture.raw_model_path
-        if not model_path.endswith("obj"):
+        # model_path: ../../Dataset/3D-FUTURE-model/36a8ee08-14c3-4380-ae0e-1a66525aa7f5/raw_model.obj
+        if not model_path.endswith("obj"): # 这里是False、不会被执行
             import pdb
             pdb.set_trace()
 
-        # Load the furniture and scale it as it is given in the dataset
+        # Load the furniture and scale it as it is given in the dataset # 加载家具并按照数据集中给出的比例进行缩放
         raw_mesh = TexturedMesh.from_file(model_path)
+        # raw_mesh: <simple_3dviz.renderables.textured_mesh.TexturedMesh object at 0x7688f27c3430>
         raw_mesh.scale(furniture.scale)
+        # furniture.scale: [1, 1, 1]
 
-        # Compute the centroid of the vertices in order to match the
-        # bbox (because the prediction only considers bboxes)
+        # Compute the centroid of the vertices in order to match the bbox (because the prediction only considers bboxes)
+        # 计算顶点的质心以匹配bbox（因为预测只考虑bbox）
         bbox = raw_mesh.bbox
+        # bbox: [
+        #   [-0.187537,  0.      , -0.187537],
+        #   [ 0.187537,  0.529763,  0.187537]   ]
         centroid = (bbox[0] + bbox[1])/2
+        # centroid: [0., 0.2648815, 0.]
 
-        # Extract the predicted affine transformation to position the
-        # mesh
+        # Extract the predicted affine transformation to position the mesh
+        # 提取预测的仿射变换以定位网格
         translation = furniture.centroid(offset=-scene.centroid)
+        # translation: [ 0.3306,2.61854499,-0.0488 ]
         theta = furniture.z_angle
+        # theta: 0
         R = np.zeros((3, 3))
-        R[0, 0] = np.cos(theta)
+        R[0, 0] = +np.cos(theta)
         R[0, 2] = -np.sin(theta)
-        R[2, 0] = np.sin(theta)
-        R[2, 2] = np.cos(theta)
-        R[1, 1] = 1.
+        R[2, 0] = +np.sin(theta)
+        R[2, 2] = +np.cos(theta)
+        R[1, 1] = +1.
+        # R: [[ 1.  0. -0.]
+        #     [ 0.  1.  0.]
+        #     [ 0.  0.  1.]]
 
         # Apply the transformations in order to correctly position the mesh
-        raw_mesh.affine_transform(t=-centroid)
+        # 应用变换以正确定位网格
+        raw_mesh.affine_transform(t=-centroid)#这里的t应该是移动，而R是旋转
         raw_mesh.affine_transform(R=R, t=translation)
         renderables.append(raw_mesh)
+        # print()
     return renderables
 
 
@@ -171,6 +201,7 @@ def render(scene, renderables, color, mode, frame_path=None):
         color = [None]*len(renderables)
 
     scene.clear()
+    # print("scene flag")
     for r, c in zip(renderables, color):
         if isinstance(r, Mesh) and c is not None:
             r.mode = mode

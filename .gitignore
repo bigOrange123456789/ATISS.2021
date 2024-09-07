@@ -24,3 +24,5 @@ output/
 
 #VS Code settings
 .vscode/
+
+.idea
