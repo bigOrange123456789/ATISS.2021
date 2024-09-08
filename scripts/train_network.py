@@ -7,6 +7,11 @@
 # 
 
 """Script used to train a ATISS."""
+'''
+我想要验证的事情：
+1.训练的时候--输入数据的格式
+2.生成场景时--是否输入了户型图
+'''
 import argparse
 import logging
 import os
@@ -75,10 +80,14 @@ def main(argv):
 
     parser.add_argument(
         "config_file",
+        default='../config/bedrooms_config_lzc.yaml',
+        type=str,
         help="Path to the file that contains the experiment configuration"
     ) # 包含实验配置的文件的路径
     parser.add_argument(
         "output_directory",
+        default='../../Dataset/out-train',
+        type=str,
         help="Path to the output directory"
     ) # 输出目录的路径
     parser.add_argument(
@@ -153,13 +162,18 @@ def main(argv):
         os.makedirs(experiment_directory)
 
     # Save the parameters of this run to a file # 将此运行的参数保存到文件中
-    print("tag1")
     print("不输出 save_experiment_params") # lzc #save_experiment_params(args, experiment_tag, experiment_directory)
-    print("tag2")
     print("Save experiment statistics in {}".format(experiment_directory))
 
+    '''
+    在pytorch 中的数据加载到模型的操作顺序是这样的：
+    ① 创建一个Dataset对象 （自己去实现以下这个类，内部使用yeild返回一组数据数据）
+    ② 创建一个DataLoader对象
+    ③ 循环这个DataLoader对象，将img、label加载到模型中进行训练
+    '''
+
     # Parse the config file
-    config = load_config(args.config_file)
+    config = load_config(args.config_file) # 加载yaml格式的配置文件
 
     train_dataset = get_encoded_dataset(
         config["data"],
@@ -173,13 +187,31 @@ def main(argv):
     )
     # Compute the bounds for this experiment, save them to a file in the
     # experiment directory and pass them to the validation dataset
+    # 计算此实验的边界，将其保存到实验目录中的文件中，并将其传递给验证数据集
     path_to_bounds = os.path.join(experiment_directory, "bounds.npz")
+    # experiment_directory: ../../Dataset/out-train/DQ2ZXATH9
     np.savez(
         path_to_bounds,
         sizes=train_dataset.bounds["sizes"],
         translations=train_dataset.bounds["translations"],
         angles=train_dataset.bounds["angles"]
     )
+    '''
+    bounds{
+        translations: (
+            array([-2.39974681,  0.175839  , -1.82630077]), 
+            array([2.147153   , 3.22758752 , 2.38883496 ])
+        )
+        sizes: (
+            array([0.03998288, 0.0557985 , 0.03462618]), 
+            array([2.495     , 1.26      , 1.698315  ])
+        )
+        angles: (
+            array(-3.14159265), 
+            array(3.14159265)
+        )
+    }
+    '''
     print("Saved the dataset bounds in {}".format(path_to_bounds))
 
     validation_dataset = get_encoded_dataset(
@@ -191,18 +223,36 @@ def main(argv):
         path_to_bounds=path_to_bounds,
         augmentations=None,
         split=config["validation"].get("splits", ["test"])
-    )
+    )# 训练集合
+    '''
+    bounds{
+        translations:(
+            array([-2.39974681,  0.175839  , -1.82630077]), 
+            array([2.147153  , 3.22758752, 2.38883496])
+        ), 
+        sizes:(
+            array([0.03998288, 0.0557985 , 0.03462618]), 
+            array([2.495   , 1.26    , 1.698315])
+        ), 
+        angles:(
+            array(-3.14159265), 
+            array(3.14159265)
+        )
+    }
+    '''
 
     train_loader = DataLoader(
         train_dataset,
         batch_size=config["training"].get("batch_size", 128),
-        num_workers=args.n_processes,
+        num_workers=args.n_processes, # 0
+        # num_workers默认值是0. 是告诉DataLoader实例要使用多少个子进程进行数据加载(和CPU有关，和GPU无关)
         collate_fn=train_dataset.collate_fn,
+        # collate_fn函数返回为最终构建的batch数据；在这一步中处理dataset的数据，将其调整成我们期望的数据格式；
         shuffle=True
     )
     print("Loaded {} training scenes with {} object types".format(
         len(train_dataset), train_dataset.n_object_types)
-    )
+    ) # Loaded 26 training scenes with 17 object types
     print("Training set has {} bounds".format(train_dataset.bounds))
 
     val_loader = DataLoader(
@@ -288,10 +338,11 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    print("test --lzc")
     main(sys.argv[1:])
 
 
-# python train_network.py ../../Dataset/out-pickle/threed_future_model_bedroom.pkl ../../Dataset/out-train
-
 # python train_network.py ../config/bedrooms_config_lzc.yaml ../../Dataset/out-train
+
+# desktop
+# python ./ATISS.2021/scripts/train_network.py ./ATISS.2021/config/bedrooms_config_lzc.yaml ./Dataset/out-train
+

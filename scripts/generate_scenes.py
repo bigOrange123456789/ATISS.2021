@@ -359,5 +359,7 @@ if __name__ == "__main__":
 
 # python generate_scenes.py ../config/bedrooms_config_lzc.yaml ../../Dataset/out-generate ../../Dataset/out-pickle/threed_future_model_bedroom.pkl ../../Dataset/3D-FRONT-texture --weight_file ../../Dataset/out-train/W1FYCHVEI/model_00000
 
+# desktop
+# python ./ATISS.2021/scripts/generate_scenes.py ./ATISS.2021/config/bedrooms_config_lzc.yaml ./Dataset/out-generate ./Dataset/out-pickle/threed_future_model_bedroom.pkl ./Dataset/3D-FRONT-texture --weight_file ./Dataset/out-train/W1FYCHVEI/model_00000
 
 

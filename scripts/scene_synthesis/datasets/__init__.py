@@ -21,8 +21,18 @@ def get_raw_dataset(
     path_to_bounds=None,
     split=["train", "val"]
 ):
-    dataset_type = config["dataset_type"]
-    if "cached" in dataset_type:
+    '''
+        input:
+            config["data"],
+            filter_function(
+                    config["data"],
+                    split=config["training"].get("splits", ["train", "val"])
+            ),
+            path_to_bounds=None,
+            split=config["training"].get("splits", ["train", "val"])
+    '''
+    dataset_type = config["dataset_type"] # dataset_type: "cached_threedfront"
+    if "cached" in dataset_type: #True
         # Make the train/test/validation splits
         splits_builder = CSVSplitsBuilder(config["annotation_file"])
         split_scene_ids = splits_builder.get_splits(split)
@@ -31,7 +41,8 @@ def get_raw_dataset(
             config["dataset_directory"],
             config=config,
             scene_ids=split_scene_ids
-        )
+        ) # <class 'scene_synthesis.datasets.threed_front.CachedThreedFront'>
+        # dataset contains 26 scenes with 17 discrete types
     else:
         dataset = ThreedFront.from_dataset_directory(
             config["dataset_directory"],
@@ -51,6 +62,17 @@ def get_dataset_raw_and_encoded(
     augmentations=None,
     split=["train", "val"]
 ):
+    '''
+    input:
+        config["data"],
+        filter_function(
+                config["data"],
+                split=config["training"].get("splits", ["train", "val"])
+        ),
+        path_to_bounds=None,
+        augmentations=config["data"].get("augmentations", None),
+        split=config["training"].get("splits", ["train", "val"])
+    '''
     dataset = get_raw_dataset(config, filter_fn, path_to_bounds, split=split)
     encoding = dataset_encoding_factory(
         config.get("encoding_type"),

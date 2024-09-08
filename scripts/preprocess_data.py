@@ -29,6 +29,8 @@ from scene_synthesis.datasets.threed_front import ThreedFront
 from scene_synthesis.datasets.threed_front_dataset import \
     dataset_encoding_factory
 
+import time #用于异步程序的等待
+
 def main(argv):
     parser = argparse.ArgumentParser(
         description="Prepare the 3D-FRONT scenes to train our model"
@@ -54,19 +56,34 @@ def main(argv):
         "path_to_floor_plan_textures",
         help="Path to floor texture images"
     )
-    parser.add_argument(
-        "--path_to_invalid_scene_ids",
-        default="../config/invalid_threed_front_rooms.txt",
-        help="Path to invalid scenes"
-    )
+    # parser.add_argument(
+    #     "--path_to_invalid_scene_ids",
+    #     default="../config/invalid_threed_front_rooms.txt",
+    #     help="Path to invalid scenes"
+    # )
+    # parser.add_argument(
+    #     "--path_to_invalid_bbox_jids",
+    #     default="../config/black_list.txt",
+    #     help="Path to objects that ae blacklisted"
+    # )
+    # parser.add_argument(
+    #     "--annotation_file",
+    #     default="../config/bedroom_threed_front_splits.csv",
+    #     help="Path to the train/test splits file"
+    # )
     parser.add_argument(
         "--path_to_invalid_bbox_jids",
-        default="../config/black_list.txt",
+        default="./ATISS.2021/config/black_list.txt",
         help="Path to objects that ae blacklisted"
     )
     parser.add_argument(
+        "--path_to_invalid_scene_ids",
+        default="./ATISS.2021//config/invalid_threed_front_rooms.txt",
+        help="Path to invalid scenes"
+    )
+    parser.add_argument(
         "--annotation_file",
-        default="../config/bedroom_threed_front_splits.csv",
+        default="./ATISS.2021//config/bedroom_threed_front_splits.csv",
         help="Path to the train/test splits file"
     )
     parser.add_argument(
@@ -216,15 +233,16 @@ def main(argv):
         json.dump(dataset_stats, f)
         print("The file of dataset_stats has saved!")#print("dataset_stats:",dataset_stats)
 
-    dataset = ThreedFront.from_dataset_directory(
-        dataset_directory=args.path_to_3d_front_dataset_directory, # '../../Dataset/3D-FRONT'
-        path_to_model_info=args.path_to_model_info, # '../../Dataset/3D-FUTURE-model/model_info.json'
-        path_to_models=args.path_to_3d_future_dataset_directory, # '../../Dataset/3D-FUTURE-model'
-        filter_fn=filter_function( # <function BaseDataset.filter_compose.<locals>.inner>
-            config, ["train", "val", "test"], args.without_lamps
-        )
-    )
-    print("Loading dataset with {} rooms".format(len(dataset))) # Loading dataset with 26 rooms
+    # 下面这一段似乎是冗余的代码
+    # dataset = ThreedFront.from_dataset_directory(
+    #     dataset_directory=args.path_to_3d_front_dataset_directory, # '../../Dataset/3D-FRONT'
+    #     path_to_model_info=args.path_to_model_info, # '../../Dataset/3D-FUTURE-model/model_info.json'
+    #     path_to_models=args.path_to_3d_future_dataset_directory, # '../../Dataset/3D-FUTURE-model'
+    #     filter_fn=filter_function( # <function BaseDataset.filter_compose.<locals>.inner>
+    #         config, ["train", "val", "test"], args.without_lamps
+    #     )
+    # )
+    # print("Loading dataset with {} rooms".format(len(dataset))) # Loading dataset with 26 rooms
 
     encoded_dataset = dataset_encoding_factory(
         "basic", dataset, augmentations=None, box_ordering=None
@@ -241,6 +259,8 @@ def main(argv):
         if os.path.exists(room_directory): # 如果这个房间已经处理完了就处理下一个房间
             if len(os.listdir(room_directory))==3:#如果文件数量为2说明之前这个场景没有处理完成
                 continue
+        # print('flag')
+        # print('room_directory:',room_directory)
         # Make sure we are the only ones creating this file # 确保我们是唯一创建此文件的人
         with DirLock(room_directory + ".lock") as lock:
             # lock.is_acquired: True
@@ -317,6 +337,7 @@ def main(argv):
                 continue
 
             # 获取要渲染的平面图的simple_3dviz网格 # Get a simple_3dviz Mesh of the floor plan to be rendered
+            # time.sleep(2.5)  # 休眠5秒 ，防止报错 #休眠5秒仍然会报错 #休眠2.5秒仍然会报错
             floor_plan, _, _ = floor_plan_from_scene(
                 ss, # <scene_synthesis.datasets.threed_front_scene.Room object at 0x7a85ce77d760>
                 args.path_to_floor_plan_textures, # '../../Dataset/3D-FRONT-texture'
@@ -343,12 +364,14 @@ if __name__ == "__main__":
     main(sys.argv[1:])
 # python preprocess_data.py out 3D-FRONT 3D-FUTURE-model 3D-FUTURE-model/model_info.json 3D-FRONT-texture --dataset_filtering threed_front_bedroom
 # ../../Dataset/
-# python preprocess_data.py ../../Dataset/preprocess_out ../../Dataset/3D-FRONT ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json ../../Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
+# python preprocess_data.py ../../Dataset/out_preprocess ../../Dataset/3D-FRONT ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json ../../Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
 
 # test
-# python preprocess_data.py ../../Dataset/preprocess_out ../../Dataset/3D-FRONT-TEST ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json ../../Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
+# python preprocess_data.py ../../Dataset/out_preprocess ../../Dataset/3D-FRONT-TEST ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json ../../Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
 
 
 
+# desktop
+# python ./ATISS.2021/scripts/preprocess_data.py ./Dataset/out_preprocess ./Dataset/3D-FRONT ./Dataset/3D-FUTURE-model ./Dataset/3D-FUTURE-model/model_info.json ./Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
 
 

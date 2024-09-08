@@ -25,6 +25,7 @@ from simple_3dviz.utils import render as render_simple_3dviz
 from scene_synthesis.utils import get_textured_objects
 
 import cv2
+import time #用于异步程序的等待
 
 class DirLock(object):
     def __init__(self, dirpath):
@@ -112,8 +113,12 @@ def get_floor_plan(scene, floor_textures):
     # uv.shape (9, 2)
     uv -= uv.min(axis=0) # uv.min(axis=0)=[-1.4652 -2.1933]
     uv /= 0.3  # repeat every 30cm
-    # floor_textures: 1427 ../../Dataset/3D-FRONT-texture/2439602f-174d-444d-a6a5-f4a1181f88b6
-    texture = np.random.choice(floor_textures)
+    # len(floor_textures): 1427 ../../Dataset/3D-FRONT-texture/2439602f-174d-444d-a6a5-f4a1181f88b6
+    while True:  # lzc
+        texture = np.random.choice(floor_textures)
+        if len(texture.split('.json'))==1 and len(texture.split('.py'))==1:
+            break
+
     # texture: ../../Dataset/3D-FRONT-texture/55d18b9c-47c1-46ce-97a3-2b2d1527afad
 
     #print("material:",Material.with_texture_image(texture))
@@ -121,12 +126,35 @@ def get_floor_plan(scene, floor_textures):
     #     print("texture:",texture)
     #     img = cv2.imread(texture+"/texture.png", 1)
     #     print("img",type(img),img.shape)
-    # print("texture:",texture)
+    # print("\ntexture:",texture)
+    # print('lzc texture:',texture+"/texture.png")
+    while True:# lzc
+        path0=texture+"/texture.png"
+        if os.path.exists(path0):# lzc
+            try:
+                material = Material.with_texture_image(path0)  # png
+                break
+            except:
+                print("读取文件失败",os.path.exists(path0),path0)
+        else:
+            path0 = texture + "/texture.jpg"
+            if os.path.exists(path0):
+                try:
+                    material = Material.with_texture_image(path0)  # jpg
+                    break
+                except:
+                    print("读取文件失败",os.path.exists(path0),path0)
+            else:
+                print("该路径中没有找到图片:",texture)
+                print("texture.split('.json'):",texture.split('.json'))
+                print("texture.split('.py'):", texture.split('.py'))
+        time.sleep(1)
+
     floor = TexturedMesh.from_faces(
         vertices=vertices,
         uv=uv,
         faces=faces,
-        material=Material.with_texture_image(texture+"/texture.png") # Material.with_texture_image(texture)
+        material=material#Material.with_texture_image(texture+"/texture.png") # Material.with_texture_image(texture)
     )
 
     tr_floor = trimesh.Trimesh(
@@ -135,7 +163,7 @@ def get_floor_plan(scene, floor_textures):
     tr_floor.visual = trimesh.visual.TextureVisuals(
         uv=np.copy(uv),
         material=trimesh.visual.material.SimpleMaterial(
-            image=Image.open(texture+"/texture.png") # Image.open(texture)
+            image=Image.open(path0) # Image.open(texture+"/texture.png") # Image.open(texture)
         )
     )
 

@@ -43,19 +43,34 @@ def main(argv):
         "path_to_model_info",
         help="Path to the 3D-FUTURE model_info.json file"
     )
+    # parser.add_argument(
+    #     "--path_to_invalid_bbox_jids",
+    #     default="../config/black_list.txt",
+    #     help="Path to objects that ae blacklisted"
+    # )
+    # parser.add_argument(
+    #     "--path_to_invalid_scene_ids",
+    #     default="../config/invalid_threed_front_rooms.txt",
+    #     help="Path to invalid scenes"
+    # )
+    # parser.add_argument(
+    #     "--annotation_file",
+    #     default="../config/bedroom_threed_front_splits.csv",
+    #     help="Path to the train/test splits file"
+    # )
     parser.add_argument(
         "--path_to_invalid_bbox_jids",
-        default="../config/black_list.txt",
+        default="./ATISS.2021/config/black_list.txt",
         help="Path to objects that ae blacklisted"
     )
     parser.add_argument(
         "--path_to_invalid_scene_ids",
-        default="../config/invalid_threed_front_rooms.txt",
+        default="./ATISS.2021//config/invalid_threed_front_rooms.txt",
         help="Path to invalid scenes"
     )
     parser.add_argument(
         "--annotation_file",
-        default="../config/bedroom_threed_front_splits.csv",
+        default="./ATISS.2021//config/bedroom_threed_front_splits.csv",
         help="Path to the train/test splits file"
     )
     parser.add_argument(
@@ -126,3 +141,7 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv[1:])
 # python pickle_threed_future_dataset.py ../../Dataset/out-pickle ../../Dataset/3D-FRONT-TEST ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json --dataset_filtering threed_front_bedroom
+
+# desktop
+# python ./ATISS.2021/scripts/pickle_threed_future_dataset.py ./Dataset/out-pickle ./Dataset/3D-FRONT ./Dataset/3D-FUTURE-model ./Dataset/3D-FUTURE-model/model_info.json --dataset_filtering threed_front_bedroom & source activate atiss
+
