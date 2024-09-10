@@ -56,36 +56,36 @@ def main(argv):
         "path_to_floor_plan_textures",
         help="Path to floor texture images"
     )
-    # parser.add_argument(
-    #     "--path_to_invalid_scene_ids",
-    #     default="../config/invalid_threed_front_rooms.txt",
-    #     help="Path to invalid scenes"
-    # )
-    # parser.add_argument(
-    #     "--path_to_invalid_bbox_jids",
-    #     default="../config/black_list.txt",
-    #     help="Path to objects that ae blacklisted"
-    # )
-    # parser.add_argument(
-    #     "--annotation_file",
-    #     default="../config/bedroom_threed_front_splits.csv",
-    #     help="Path to the train/test splits file"
-    # )
-    parser.add_argument(
-        "--path_to_invalid_bbox_jids",
-        default="./ATISS.2021/config/black_list.txt",
-        help="Path to objects that ae blacklisted"
-    )
     parser.add_argument(
         "--path_to_invalid_scene_ids",
-        default="./ATISS.2021//config/invalid_threed_front_rooms.txt",
+        default="../config/invalid_threed_front_rooms.txt",
         help="Path to invalid scenes"
     )
     parser.add_argument(
+        "--path_to_invalid_bbox_jids",
+        default="../config/black_list.txt",
+        help="Path to objects that ae blacklisted"
+    )
+    parser.add_argument(
         "--annotation_file",
-        default="./ATISS.2021//config/bedroom_threed_front_splits.csv",
+        default="../config/bedroom_threed_front_splits.csv",
         help="Path to the train/test splits file"
     )
+    # parser.add_argument(
+    #     "--path_to_invalid_bbox_jids",
+    #     default="./ATISS.2021/config/black_list.txt",
+    #     help="Path to objects that ae blacklisted"
+    # )
+    # parser.add_argument(
+    #     "--path_to_invalid_scene_ids",
+    #     default="./ATISS.2021/config/invalid_threed_front_rooms.txt",
+    #     help="Path to invalid scenes"
+    # )
+    # parser.add_argument(
+    #     "--annotation_file",
+    #     default="./ATISS.2021/config/bedroom_threed_front_splits.csv",
+    #     help="Path to the train/test splits file"
+    # )
     parser.add_argument(
         "--room_side",
         type=float,
@@ -364,14 +364,14 @@ if __name__ == "__main__":
     main(sys.argv[1:])
 # python preprocess_data.py out 3D-FRONT 3D-FUTURE-model 3D-FUTURE-model/model_info.json 3D-FRONT-texture --dataset_filtering threed_front_bedroom
 # ../../Dataset/
-# python preprocess_data.py ../../Dataset/out_preprocess ../../Dataset/3D-FRONT ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json ../../Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
+# python preprocess_data.py ../../Dataset/out-preprocess ../../Dataset/3D-FRONT ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json ../../Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
 
 # test
-# python preprocess_data.py ../../Dataset/out_preprocess ../../Dataset/3D-FRONT-TEST ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json ../../Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
+# python preprocess_data.py ../../Dataset/out-preprocess ../../Dataset/3D-FRONT-TEST ../../Dataset/3D-FUTURE-model ../../Dataset/3D-FUTURE-model/model_info.json ../../Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
 
 
 
 # desktop
-# python ./ATISS.2021/scripts/preprocess_data.py ./Dataset/out_preprocess ./Dataset/3D-FRONT ./Dataset/3D-FUTURE-model ./Dataset/3D-FUTURE-model/model_info.json ./Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
+# python ./ATISS.2021/scripts/preprocess_data.py ./Dataset/out-preprocess ./Dataset/3D-FRONT ./Dataset/3D-FUTURE-model ./Dataset/3D-FUTURE-model/model_info.json ./Dataset/3D-FRONT-texture --dataset_filtering threed_front_bedroom
 
 

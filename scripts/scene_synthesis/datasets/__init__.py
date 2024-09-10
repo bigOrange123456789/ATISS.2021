@@ -23,18 +23,30 @@ def get_raw_dataset(
 ):
     '''
         input:
+        ------  train_dataset  ------
             config["data"],
             filter_function(
-                    config["data"],
-                    split=config["training"].get("splits", ["train", "val"])
+                config["data"],
+                split=['train', 'val']
             ),
             path_to_bounds=None,
-            split=config["training"].get("splits", ["train", "val"])
+            split=['train', 'val']
+        ------validation_dataset------
+            config["data"],
+            filter_function(
+                config["data"],
+                split=['test']
+            ),
+            path_to_bounds='../../Dataset/out-train/DUU4ADOQL/bounds.npz',
+            split=['test']
     '''
     dataset_type = config["dataset_type"] # dataset_type: "cached_threedfront"
     if "cached" in dataset_type: #True
         # Make the train/test/validation splits
         splits_builder = CSVSplitsBuilder(config["annotation_file"])
+        print('config["annotation_file"]',config["annotation_file"])
+        print('split',split)
+        # annotation_file : ../config/bedroom_threed_front_splits.csv
         split_scene_ids = splits_builder.get_splits(split)
 
         dataset = CachedThreedFront(
@@ -64,14 +76,24 @@ def get_dataset_raw_and_encoded(
 ):
     '''
     input:
+    ------  train_dataset  ------
         config["data"],
         filter_function(
-                config["data"],
-                split=config["training"].get("splits", ["train", "val"])
+            config["data"],
+            split=['train', 'val']
         ),
         path_to_bounds=None,
-        augmentations=config["data"].get("augmentations", None),
-        split=config["training"].get("splits", ["train", "val"])
+        augmentations=['rotations'],
+        split=['train', 'val']
+    ------validation_dataset------
+        config["data"],
+        filter_function(
+            config["data"],
+            split=['test']
+        ),
+        path_to_bounds='../../Dataset/out-train/DUU4ADOQL/bounds.npz',
+        augmentations=None,
+        split=['test']
     '''
     dataset = get_raw_dataset(config, filter_fn, path_to_bounds, split=split)
     encoding = dataset_encoding_factory(

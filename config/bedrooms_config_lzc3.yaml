@@ -1,8 +1,8 @@
 data:
     dataset_type: "cached_threedfront"
     encoding_type: "cached_autoregressive_wocm"
-    dataset_directory: "../../Dataset/out-preprocess-TEST"
-    annotation_file: "../config/bedroom_threed_front_splits.csv"
+    dataset_directory: "../../Dataset/out-preprocess"
+    annotation_file: "../config/bedroom_threed_front_splits_lzc.csv"
     path_to_invalid_scene_ids: "../config/invalid_threed_front_rooms.txt"
     path_to_invalid_bbox_jids: "../config/black_list.txt"
     augmentations: ["rotations"]
@@ -32,7 +32,7 @@ feature_extractor:
 
 training:
     splits: ["train", "val"]
-    epochs: 5
+    epochs: 10000
     steps_per_epoch: 500
     batch_size: 128
     save_frequency: 50
@@ -42,7 +42,7 @@ training:
 
 validation:
     splits: ["test"]
-    frequency: 2
+    frequency: 5
     batch_size: 128
 
 logger:
