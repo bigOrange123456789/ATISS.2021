@@ -49,6 +49,7 @@ def save_lzc(bbox_params_t, objects_dataset, classes, pathPre):#lzc
         'centroid': [0,0,0],#s.centroid.tolist(),
         'meshes': []
     }
+    # bbox_params_t.shape[1]-1: 5
     for j in range(1, bbox_params_t.shape[1]-1): # bbox_params_t.shape[1]-1=11
         # bbox_params_t: shape=(1, 8, 26) type=<class 'numpy.ndarray'>
         query_size = bbox_params_t[0, j, -4:-1] # query_size: [0.21811413 0.48709698 0.3640413 ]
@@ -232,6 +233,7 @@ def main(argv):
     #  'pendant_lamp' 'shelf' 'single_bed' 'stool' 'table'
     #  'tv_stand' 'wardrobe'
     #  'start' 'end']
+    print('args.n_sequences:',args.n_sequences) #args.n_sequences: 10
     for i in range(args.n_sequences): # args.n_sequences 10 (预先指定的序列数)
         # 序列编号为： 0
         # 0 / 10: Using the 0 floor plan of scene SecondBedroom-6482
@@ -276,6 +278,7 @@ def main(argv):
         # bbox_params_t: shape=(1, 8, 26) type=<class 'numpy.ndarray'>
 
         if True:
+            print('tag1')
             save_lzc(bbox_params_t, objects_dataset, classes, args.output_directory)
             print('程序执行结束！')
             exit(0)
@@ -358,8 +361,6 @@ if __name__ == "__main__":
 # --weight_file ../../Dataset/out-train/W1FYCHVEI/model_00000
 
 # python generate_scenes.py ../config/bedrooms_config_lzc.yaml ../../Dataset/out-generate ../../Dataset/out-pickle/threed_future_model_bedroom.pkl ../../Dataset/3D-FRONT-texture --weight_file ../../Dataset/out-train/W1FYCHVEI/model_00000
+# python generate_scenes.py ../config/bedrooms_config_lzc3.yaml ../../Dataset/out-generate ../../Dataset/out-pickle/threed_future_model_bedroom.pkl ../../Dataset/3D-FRONT-texture --weight_file ../../Dataset/out-train/model_00050
 
-# desktop
-# python ./ATISS.2021/scripts/generate_scenes.py ./ATISS.2021/config/bedrooms_config_lzc.yaml ./Dataset/out-generate ./Dataset/out-pickle/threed_future_model_bedroom.pkl ./Dataset/3D-FRONT-texture --weight_file ./Dataset/out-train/W1FYCHVEI/model_00000
-
-
+# export PATH="~/anaconda3/bin:$PATH"
