@@ -68,6 +68,7 @@ def build_network(
     device="cpu"):
     network_type = config["network"]["type"]
 
+    # type: "autoregressive_transformer"
     if network_type == "autoregressive_transformer":
         train_on_batch = train_on_batch_simple_autoregressive
         validate_on_batch = validate_on_batch_simple_autoregressive

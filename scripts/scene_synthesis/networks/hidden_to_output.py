@@ -49,7 +49,9 @@ class Hidden2Output(nn.Module):
     def forward(self, x, sample_params=None):
         raise NotImplementedError()
 
-
+def myp(name,value):
+    print(name + ':', value.shape)
+    # print(name + ':', value.shape, type(value))
 class AutoregressiveDMLL(Hidden2Output):
     def __init__(
         self,
@@ -261,8 +263,9 @@ class AutoregressiveDMLL(Hidden2Output):
         return dmll_params_from_pred(t_x), dmll_params_from_pred(t_y),\
             dmll_params_from_pred(t_z)
 
-    def forward(self, x, sample_params):
-        if self.with_extra_fc:
+    def forward(self, x, sample_params): # 这里应该是AttributeExtractor
+        # x: torch.Size([26, 1, 512])
+        if self.with_extra_fc: # False
             x = self.hidden2output(x)
 
         # Extract the target properties from sample_params and embed them into
@@ -270,38 +273,55 @@ class AutoregressiveDMLL(Hidden2Output):
         target_properties = \
             AutoregressiveDMLL._extract_properties_from_target(
                 sample_params
-            )
+            ) # len(target_properties)=4
 
-        class_labels = target_properties[0]
-        translations = target_properties[1]
-        angles = target_properties[3]
+        class_labels = target_properties[0] # [26, 1, 19]
+        translations = target_properties[1] # [26, 1, 3 ]
+        angles = target_properties[3]       # [26, 1, 1 ]
+        # a: torch.Size([26, 1, 64])
+        # class_labels: torch.Size([26, 1, 19])
+        # cf: torch.Size([26, 1, 576])
+        # self.centroid_layer_x(cf): torch.Size([26, 1, 30])
+        # tf: torch.Size([26, 1, 768])
+        # angles: torch.Size([26, 1, 30])
+        # sf: torch.Size([26, 1, 832])
+        # self.size_layer_x(sf): torch.Size([26, 1, 30])
 
-        c = self.fc_class_labels(class_labels)
+        c = self.fc_class_labels(class_labels) # [26, 1, 64]<-[26, 1, 19]
 
-        tx = self.pe_trans_x(translations[:, :, 0:1])
+        tx = self.pe_trans_x(translations[:, :, 0:1]) # [26, 1, 64]<-[26, 1, 1 ]
         ty = self.pe_trans_y(translations[:, :, 1:2])
         tz = self.pe_trans_z(translations[:, :, 2:3])
 
-        a = self.pe_angle_z(angles)
-        class_labels = self.class_layer(x)
+        a = self.pe_angle_z(angles) # [26, 1, 64]<-[26, 1, 1 ]
 
-        cf = torch.cat([x, c], dim=-1)
+        # 1.类别分析
+        class_labels = self.class_layer(x) # [26, 1, 19]<-[26, 1, 512]
+        # 2.位置分析
+        cf = torch.cat([x, c], dim=-1) # [26, 1, 576]<-[26, 1, 512+64]
         # Using the true class label we now want to predict the translations
         translations = (
-            self.centroid_layer_x(cf),
+            self.centroid_layer_x(cf), #[26, 1, 30]<-[26, 1, 768]
             self.centroid_layer_y(cf),
             self.centroid_layer_z(cf)
         )
-        tf = torch.cat([cf, tx, ty, tz], dim=-1)
-        angles = self.angle_layer(tf)
-        sf = torch.cat([tf, a], dim=-1)
+        # 3.方向分析
+        tf = torch.cat([cf, tx, ty, tz], dim=-1) # [26, 1, 768]<-[26, 1, 576+64*3]
+        angles = self.angle_layer(tf) # [26, 1, 30]<-[26, 1, 768]
+        # 4.尺寸分析
+        sf = torch.cat([tf, a], dim=-1) # [26, 1, 832]<-[26, 1, 768+64]
         sizes = (
-            self.size_layer_x(sf),
+            self.size_layer_x(sf), # [26, 1, 30]<-[26, 1, 832]
             self.size_layer_y(sf),
             self.size_layer_z(sf)
         )
 
-        return self.bbox_output(sizes, translations, angles, class_labels)
+        return self.bbox_output(
+            sizes,          # ([26, 1, 30],[26, 1, 30],[26, 1, 30])
+            translations,   # ([26, 1, 30],[26, 1, 30],[26, 1, 30])
+            angles,         # [26, 1, 30]
+            class_labels    # [26, 1, 19]
+        )
 
 
 def get_bbox_output(bbox_type):

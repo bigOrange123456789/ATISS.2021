@@ -60,7 +60,9 @@ class BBoxOutput(object):
     def reconstruction_loss(self, sample_params):
         raise NotImplementedError()
 
-
+def myp(name,value): # LZC
+    print(name + ':', value.shape)
+    # print(name + ':', value.shape, type(value))
 class AutoregressiveBBoxOutput(BBoxOutput):
     def __init__(self, sizes, translations, angles, class_labels):
         self.sizes_x, self.sizes_y, self.sizes_z = sizes
@@ -68,6 +70,14 @@ class AutoregressiveBBoxOutput(BBoxOutput):
             translations
         self.class_labels = class_labels
         self.angles = angles
+        # self.class_labels: torch.Size([26, 1, 19])
+        # self.size_x: torch.Size([26, 1, 30])
+        # self.size_y: torch.Size([26, 1, 30])
+        # self.size_z: torch.Size([26, 1, 30])
+        # self.translations_x: torch.Size([26, 1, 30])
+        # self.translations_y: torch.Size([26, 1, 30])
+        # self.translations_z: torch.Size([26, 1, 30])
+        # self.angles: torch.Size([26, 1, 30])
 
     @property
     def members(self):
@@ -99,6 +109,17 @@ class AutoregressiveBBoxOutput(BBoxOutput):
 
     def get_losses(self, X_target):
         target = self._targets_from_tensor(X_target)
+        # target["labels"][0,0,:] =
+        #      [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0.]
+        #      <class 'torch.Tensor'>
+        # target["labels"]: torch.Size([26, 1, 19])
+        # target["translations_x"]: torch.Size([26, 1, 1])
+        # target["translations_y"]: torch.Size([26, 1, 1])
+        # target["translations_z"]: torch.Size([26, 1, 1])
+        # target["sizes_x"]: torch.Size([26, 1, 1])
+        # target["sizes_y"]: torch.Size([26, 1, 1])
+        # target["sizes_z"]: torch.Size([26, 1, 1])
+        # target["angles"]: torch.Size([26, 1, 1])
 
         assert torch.sum(target["labels"][..., -2]).item() == 0
 
@@ -110,6 +131,7 @@ class AutoregressiveBBoxOutput(BBoxOutput):
         # logistic mixture likelihood as described in 
         # PIXELCNN++: Improving the PixelCNN with Discretized Logistic Mixture Likelihood and
         # Other Modifications, by Salimans et al.
+        # Discretized Logistic Mixture Likelihood： 离散逻辑混合似然
         translation_loss = dmll(self.translations_x, target["translations_x"])
         translation_loss += dmll(self.translations_y, target["translations_y"])
         translation_loss += dmll(self.translations_z, target["translations_z"])
@@ -120,7 +142,7 @@ class AutoregressiveBBoxOutput(BBoxOutput):
 
         return label_loss, translation_loss, size_loss, angle_loss
 
-    def reconstruction_loss(self, X_target, lengths):
+    def reconstruction_loss(self, X_target, lengths): # 计算损失函数的地方
         # Compute the losses
         label_loss, translation_loss, size_loss, angle_loss = \
             self.get_losses(X_target)

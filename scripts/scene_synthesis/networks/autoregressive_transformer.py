@@ -103,6 +103,9 @@ class BaseAutoregressiveTransformer(nn.Module):
     def generate_boxes(self, room_mask, max_boxes=32, device="cpu"):
         raise NotImplementedError()
 
+def myp(name,value):
+    # print(name + ':', value.shape)
+    print(name + ':', value.shape, type(value))
 
 class AutoregressiveTransformer(BaseAutoregressiveTransformer):
     def __init__(self, input_dims, hidden2output, feature_extractor, config):
@@ -119,39 +122,57 @@ class AutoregressiveTransformer(BaseAutoregressiveTransformer):
         sizes = sample_params["sizes"]
         angles = sample_params["angles"]
         room_layout = sample_params["room_layout"]
+        '''
+            我猜这个房间里面应该有8个物体
+            一次分析26个房间的信息？
+            class_labels: [26, 8, 19] 物体分类特征的维度为19
+            translations: [26, 8, 3]
+            sizes:        [26, 8, 3]
+            angles:       [26, 8, 1]
+            room_layout:  [26, 1, 64, 64]
+        '''
         B, _, _ = class_labels.shape
 
+        # StructureEncoder开始
         # Apply the positional embeddings only on bboxes that are not the start
         # token
-        class_f = self.fc_class(class_labels)
+        class_f = self.fc_class(class_labels) # [26, 8, 19]->[26, 8, 64]
         # Apply the positional embedding along each dimension of the position
         # property
-        pos_f_x = self.pe_pos_x(translations[:, :, 0:1])
+        pos_f_x = self.pe_pos_x(translations[:, :, 0:1]) # [26, 8, 1]->[26, 8, 64]
         pos_f_y = self.pe_pos_y(translations[:, :, 1:2])
         pos_f_z = self.pe_pos_z(translations[:, :, 2:3])
-        pos_f = torch.cat([pos_f_x, pos_f_y, pos_f_z], dim=-1)
+        pos_f = torch.cat([pos_f_x, pos_f_y, pos_f_z], dim=-1) # [26, 8, 64]*3->[26, 8, 192]
 
-        size_f_x = self.pe_size_x(sizes[:, :, 0:1])
+        size_f_x = self.pe_size_x(sizes[:, :, 0:1]) # [26, 8, 1]->[26, 8, 64]
         size_f_y = self.pe_size_y(sizes[:, :, 1:2])
         size_f_z = self.pe_size_z(sizes[:, :, 2:3])
-        size_f = torch.cat([size_f_x, size_f_y, size_f_z], dim=-1)
+        size_f = torch.cat([size_f_x, size_f_y, size_f_z], dim=-1) # [26, 8, 64]*3->[26, 8, 192]
 
-        angle_f = self.pe_angle_z(angles)
-        X = torch.cat([class_f, pos_f, size_f, angle_f], dim=-1)
+        angle_f = self.pe_angle_z(angles) # [26, 8, 1]->[26, 8, 64]
+        X = torch.cat([class_f, pos_f, size_f, angle_f], dim=-1) # [26, 8, 64+192+192+64]->[26, 8, 512]
+        # StructureEncoder结束
 
-        start_symbol_f = self.start_symbol_features(B, room_layout)
+        start_symbol_f = self.start_symbol_features(B, room_layout) # [26, 1, 512]
         # Concatenate with the mask embedding for the start token
-        X = torch.cat([
+        X = torch.cat([ # self.empty_token_embedding.expand(B, -1, -1).shape=[26, 1, 512]
             start_symbol_f, self.empty_token_embedding.expand(B, -1, -1), X
-        ], dim=1)
-        X = self.fc(X)
+            # 布局：1*512 | start_symbol_f,
+            # 查询：1*512 | self.empty_token_embedding.expand(B, -1, -1),
+            # 场景：8*512 | X
+        ], dim=1) # [26, 1+1+8, 512]->[26, 10, 512]
+        X = self.fc(X) # [26, 10, 512]
 
         # Compute the features using causal masking
         lengths = LengthMask(
             sample_params["lengths"]+2,
             max_len=X.shape[1]
         )
-        F = self.transformer_encoder(X, length_mask=lengths)
+        #lengths.shape=[26, 10] <class 'fast_transformers.masking.LengthMask'>
+        F = self.transformer_encoder(X, length_mask=lengths) # TransformerEncoder
+        # F[26, 10, 512]<-X[26, 10, 512],[26, 10]
+        # F的第二个为查询特征 F[:, 1:2]
+        # F[:, 1:2].shape = [26, 1, 512]
         return self.hidden2output(F[:, 1:2], sample_params)
 
     def _encode(self, boxes, room_mask):
