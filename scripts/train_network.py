@@ -340,7 +340,11 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv[1:])
 
-
+'''
+export PATH="~/anaconda3/bin:$PATH"
+source activate atissTest
+python train_network.py ../config/bedrooms_config_lzc.yaml ../../Dataset/out-train
+'''
 # python train_network.py ../config/bedrooms_config_lzc.yaml ../../Dataset/out-train
 
 # desktop

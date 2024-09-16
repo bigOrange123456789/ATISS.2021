@@ -18,9 +18,102 @@ from ..stats_logger import StatsLogger
 
 class BaseAutoregressiveTransformer(nn.Module):
     def __init__(self, input_dims, hidden2output, feature_extractor, config):
+        '''
+        feature_extractor：
+        ResNet18(
+          (_feature_extractor): ResNet(
+            (conv1): Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+            (bn1): FrozenBatchNorm2d(64)
+            (relu): ReLU(inplace=True)
+            (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+            (layer1): Sequential(
+              (0): BasicBlock(
+                (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn1): FrozenBatchNorm2d(64)
+                (relu): ReLU(inplace=True)
+                (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn2): FrozenBatchNorm2d(64)
+              )
+              (1): BasicBlock(
+                (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn1): FrozenBatchNorm2d(64)
+                (relu): ReLU(inplace=True)
+                (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn2): FrozenBatchNorm2d(64)
+              )
+            )
+            (layer2): Sequential(
+              (0): BasicBlock(
+                (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+                (bn1): FrozenBatchNorm2d(128)
+                (relu): ReLU(inplace=True)
+                (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn2): FrozenBatchNorm2d(128)
+                (downsample): Sequential(
+                  (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(2, 2), bias=False)
+                  (1): FrozenBatchNorm2d(128)
+                )
+              )
+              (1): BasicBlock(
+                (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn1): FrozenBatchNorm2d(128)
+                (relu): ReLU(inplace=True)
+                (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn2): FrozenBatchNorm2d(128)
+              )
+            )
+            (layer3): Sequential(
+              (0): BasicBlock(
+                (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+                (bn1): FrozenBatchNorm2d(256)
+                (relu): ReLU(inplace=True)
+                (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn2): FrozenBatchNorm2d(256)
+                (downsample): Sequential(
+                  (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(2, 2), bias=False)
+                  (1): FrozenBatchNorm2d(256)
+                )
+              )
+              (1): BasicBlock(
+                (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn1): FrozenBatchNorm2d(256)
+                (relu): ReLU(inplace=True)
+                (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn2): FrozenBatchNorm2d(256)
+              )
+            )
+            (layer4): Sequential(
+              (0): BasicBlock(
+                (conv1): Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+                (bn1): FrozenBatchNorm2d(512)
+                (relu): ReLU(inplace=True)
+                (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn2): FrozenBatchNorm2d(512)
+                (downsample): Sequential(
+                  (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+                  (1): FrozenBatchNorm2d(512)
+                )
+              )
+              (1): BasicBlock(
+                (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn1): FrozenBatchNorm2d(512)
+                (relu): ReLU(inplace=True)
+                (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+                (bn2): FrozenBatchNorm2d(512)
+              )
+            )
+            (avgpool): AdaptiveAvgPool2d(output_size=(1, 1))
+            (fc): Sequential(
+              (0): Linear(in_features=512, out_features=512, bias=True)
+              (1): ReLU()
+              (2): Linear(in_features=512, out_features=64, bias=True)
+            )
+          )
+        )
+        '''
         super().__init__()
         # Build a transformer encoder
-        self.transformer_encoder = TransformerEncoderBuilder.from_kwargs(
+        self.transformer_encoder = TransformerEncoderBuilder.from_kwargs( # 里面是自注意力机制
             n_layers=config.get("n_layers", 6),
             n_heads=config.get("n_heads", 12),
             query_dimensions=config.get("query_dimensions", 64),
@@ -43,6 +136,8 @@ class BaseAutoregressiveTransformer(nn.Module):
         self.fc_room_f = nn.Linear(
             self.feature_extractor.feature_size, 512
         )
+        # torch.nn.Linear(in_features, out_features, bias=True, device=None, dtype=None)
+        # y=x'A+b
 
         # Positional encoding for each property
         self.pe_pos_x = FixedPositionalEncoding(proj_dims=64)
@@ -89,7 +184,14 @@ class BaseAutoregressiveTransformer(nn.Module):
             "angles": torch.zeros(1, 1, 1, device=device)
         }
 
-    def start_symbol_features(self, B, room_mask):
+    def start_symbol_features(self, B, room_mask): # 感觉这里应该就是 LayoutEncoder
+        '''
+            room_mask: [26, 1, 64, 64] <class 'torch.Tensor'>
+            self.feature_extractor(room_mask): [26, 64] <class 'torch.Tensor'>
+            room_layout_f: [26, 512] <class 'torch.Tensor'>
+            ?后面进行一次线性变换的意义何在？
+            room_layout_f[:, None, :]: [26, 1, 512] <class 'torch.Tensor'>
+        '''
         room_layout_f = self.fc_room_f(self.feature_extractor(room_mask))
         return room_layout_f[:, None, :]
 
@@ -113,6 +215,7 @@ class AutoregressiveTransformer(BaseAutoregressiveTransformer):
         # Embedding to be used for the empty/mask token
         self.register_parameter(
             "empty_token_embedding", nn.Parameter(torch.randn(1, 512))
+            # 使用标准正态分布生成形状为[1, 512]的随机数据
         )
 
     def forward(self, sample_params):
@@ -137,10 +240,11 @@ class AutoregressiveTransformer(BaseAutoregressiveTransformer):
         # Apply the positional embeddings only on bboxes that are not the start
         # token
         class_f = self.fc_class(class_labels) # [26, 8, 19]->[26, 8, 64]
+        # self.fc_class : nn.Linear(self.n_classes, 64, bias=False)
         # Apply the positional embedding along each dimension of the position
         # property
         pos_f_x = self.pe_pos_x(translations[:, :, 0:1]) # [26, 8, 1]->[26, 8, 64]
-        pos_f_y = self.pe_pos_y(translations[:, :, 1:2])
+        pos_f_y = self.pe_pos_y(translations[:, :, 1:2]) # 里面不含学习参数，不知道这里的编码意义何在 # Transformer中的PositionalEncoding
         pos_f_z = self.pe_pos_z(translations[:, :, 2:3])
         pos_f = torch.cat([pos_f_x, pos_f_y, pos_f_z], dim=-1) # [26, 8, 64]*3->[26, 8, 192]
 
@@ -154,11 +258,26 @@ class AutoregressiveTransformer(BaseAutoregressiveTransformer):
         # StructureEncoder结束
 
         start_symbol_f = self.start_symbol_features(B, room_layout) # [26, 1, 512]
+        # LayoutEncoder: [26, 1, 512]<-[26, 512]<-[26, 64]<-[26, 1, 64, 64]
         # Concatenate with the mask embedding for the start token
+        '''
+        self.empty_token_embedding : shape=[1, 512]
+            [[-0.8190, -0.5559,  1.4339,  ..., -1.4929,  0.5607,  1.0675]] # 标准正态分布
+        self.empty_token_embedding.expand(B, -1, -1) : shape=[26, 1, 512]
+        [
+            [[-0.8190, -0.5559,  1.4339,  ..., -1.4929,  0.5607,  1.0675]],
+            [[-0.8190, -0.5559,  1.4339,  ..., -1.4929,  0.5607,  1.0675]],
+            [[-0.8190, -0.5559,  1.4339,  ..., -1.4929,  0.5607,  1.0675]],
+            ...,
+            [[-0.8190, -0.5559,  1.4339,  ..., -1.4929,  0.5607,  1.0675]],
+            [[-0.8190, -0.5559,  1.4339,  ..., -1.4929,  0.5607,  1.0675]],
+            [[-0.8190, -0.5559,  1.4339,  ..., -1.4929,  0.5607,  1.0675]]
+        ]
+        '''
         X = torch.cat([ # self.empty_token_embedding.expand(B, -1, -1).shape=[26, 1, 512]
             start_symbol_f, self.empty_token_embedding.expand(B, -1, -1), X
             # 布局：1*512 | start_symbol_f,
-            # 查询：1*512 | self.empty_token_embedding.expand(B, -1, -1),
+            # 查询：1*512 | self.empty_token_embedding.expand(26, -1, -1),
             # 场景：8*512 | X
         ], dim=1) # [26, 1+1+8, 512]->[26, 10, 512]
         X = self.fc(X) # [26, 10, 512]
